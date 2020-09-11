@@ -46,7 +46,18 @@ class ScHttpClient {
     var bytes = await res.toList();
     var actualBytes = <int>[];
     for (var b in bytes) actualBytes.addAll(b);
-    var r = utf8.decode(actualBytes);
+
+    String r;
+    var charset = res.headers.contentType.charset.toLowerCase();
+
+    if (charset == 'utf-8')
+      r = utf8.decode(actualBytes);
+    else if (charset == 'us' || charset == 'us-ascii' || charset == 'ascii')
+      r = ascii.decode(actualBytes);
+    else if (charset == 'latin1' || charset == 'l1')
+      r = latin1.decode(actualBytes);
+    else
+      r = utf8.decode(actualBytes);
     if (res.statusCode == 200 && setCache != null) setCache(id, r, ttl);
     return r;
   }

@@ -1,3 +1,7 @@
+## 0.2.0
+
+* Support for using US-ASCII and Latin-1 when the server sends it.
+
 ## 0.1.0
 
 * The initial release.
