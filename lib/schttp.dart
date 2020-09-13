@@ -55,7 +55,7 @@ class ScHttpClient {
     try {
       charset = res.headers.contentType.charset.toLowerCase();
     } catch (e) {
-      charset = 'utf-8';
+      charset = 'ascii';
     }
 
     if (charset == 'utf-8')
