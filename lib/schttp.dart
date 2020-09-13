@@ -51,21 +51,23 @@ class ScHttpClient {
     var actualBytes = <int>[];
     for (var b in bytes) actualBytes.addAll(b);
 
-    String r, charset;
+    String r;
     try {
-      charset = res.headers.contentType.charset.toLowerCase();
+      String Function(List<int>) charset;
+      var cs = res.headers.contentType.charset.toLowerCase();
+      if (cs == 'utf-8')
+        charset = utf8.decode;
+      else if (cs == 'us' || cs == 'us-ascii' || cs == 'ascii')
+        charset = ascii.decode;
+      else if (cs == 'latin1' || cs == 'l1')
+        charset = latin1.decode;
+      else
+        charset = utf8.decode;
+      r = charset(actualBytes);
     } catch (e) {
-      charset = 'utf-8';
+      r = String.fromCharCodes(actualBytes);
     }
 
-    if (charset == 'utf-8')
-      r = utf8.decode(actualBytes);
-    else if (charset == 'us' || charset == 'us-ascii' || charset == 'ascii')
-      r = ascii.decode(actualBytes);
-    else if (charset == 'latin1' || charset == 'l1')
-      r = latin1.decode(actualBytes);
-    else
-      r = utf8.decode(actualBytes);
     if (res.statusCode == 200 && setCache != null) setCache(id, r, ttl);
     return r;
   }
