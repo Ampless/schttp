@@ -15,6 +15,10 @@ class ScHttpClient {
     Map<String, String> headers, {
     Duration ttl,
   }) async {
+    if (url == null) throw '[schttp-POST] url = null';
+    if (body == null) throw '[schttp-POST] body = null';
+    if (id == null) throw '[schttp-POST] id = null';
+    if (headers == null) throw '[schttp-POST] headers = null';
     ttl ??= Duration(minutes: 15);
     if (getCache != null) {
       var cachedResp = getCache(id);
@@ -27,13 +31,13 @@ class ScHttpClient {
   }
 
   Future<String> get(Uri url, {Duration ttl}) async {
+    if (url == null) throw '[schttp-GET] url = null';
     ttl ??= Duration(days: 4);
     if (getCache != null) {
       var cachedResp = getCache('$url');
       if (cachedResp != null) return cachedResp;
     }
-    var req = await _client.getUrl(url);
-    return _finishRequest(req, '$url', ttl);
+    return _finishRequest(await _client.getUrl(url), '$url', ttl);
   }
 
   Future<String> _finishRequest(
