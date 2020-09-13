@@ -51,8 +51,12 @@ class ScHttpClient {
     var actualBytes = <int>[];
     for (var b in bytes) actualBytes.addAll(b);
 
-    String r;
-    var charset = res.headers.contentType.charset.toLowerCase();
+    String r, charset;
+    try {
+      charset = res.headers.contentType.charset.toLowerCase();
+    } catch (e) {
+      charset = 'utf-8';
+    }
 
     if (charset == 'utf-8')
       r = utf8.decode(actualBytes);
