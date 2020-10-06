@@ -6,7 +6,7 @@ class ScHttpClient {
   String Function(String) getCache;
   void Function(String, String, Duration) setCache;
 
-  ScHttpClient(this.getCache, this.setCache);
+  ScHttpClient([this.getCache, this.setCache]);
 
   Future<String> post(
     Uri url,

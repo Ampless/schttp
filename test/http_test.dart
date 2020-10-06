@@ -23,7 +23,7 @@ testCase httpTestCase(String url, HttpMethod method, Object body,
       if (method == HttpMethod.GET)
         await testClient.get(Uri.parse(url));
       else if (method == HttpMethod.POST)
-        await testClient.post(Uri.parse(url), body, null, headers);
+        await testClient.post(Uri.parse(url), body, body, headers);
       else
         throw 'The test is broken.';
       assert(setCacheCalled && getCacheCalled);
