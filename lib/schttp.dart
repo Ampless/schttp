@@ -3,8 +3,8 @@ import 'dart:io';
 
 class ScHttpClient {
   var _client = HttpClient();
-  String Function(String) getCache;
-  void Function(String, String, Duration) setCache;
+  String? Function(String)? getCache;
+  void Function(String, String, Duration)? setCache;
 
   ScHttpClient([this.getCache, this.setCache]);
 
@@ -13,15 +13,11 @@ class ScHttpClient {
     Object body,
     String id,
     Map<String, String> headers, {
-    Duration ttl,
+    Duration? ttl,
   }) async {
-    if (url == null) throw '[schttp-POST] url = null';
-    if (body == null) throw '[schttp-POST] body = null';
-    if (id == null) throw '[schttp-POST] id = null';
-    if (headers == null) throw '[schttp-POST] headers = null';
     ttl ??= Duration(minutes: 15);
     if (getCache != null) {
-      var cachedResp = getCache(id);
+      var cachedResp = getCache!(id);
       if (cachedResp != null) return cachedResp;
     }
     var req = await _client.postUrl(url);
@@ -30,11 +26,10 @@ class ScHttpClient {
     return _finishRequest(req, id, ttl);
   }
 
-  Future<String> get(Uri url, {Duration ttl}) async {
-    if (url == null) throw '[schttp-GET] url = null';
+  Future<String> get(Uri url, {Duration? ttl}) async {
     ttl ??= Duration(days: 4);
     if (getCache != null) {
-      var cachedResp = getCache('$url');
+      var cachedResp = getCache!('$url');
       if (cachedResp != null) return cachedResp;
     }
     return _finishRequest(await _client.getUrl(url), '$url', ttl);
@@ -54,7 +49,7 @@ class ScHttpClient {
     String r;
     try {
       String Function(List<int>) charset;
-      var cs = res.headers.contentType.charset.toLowerCase();
+      var cs = res.headers.contentType!.charset!.toLowerCase();
       if (cs == 'utf-8')
         charset = utf8.decode;
       else if (cs == 'us' || cs == 'us-ascii' || cs == 'ascii')
@@ -68,7 +63,7 @@ class ScHttpClient {
       r = String.fromCharCodes(actualBytes);
     }
 
-    if (res.statusCode == 200 && setCache != null) setCache(id, r, ttl);
+    if (res.statusCode == 200 && setCache != null) setCache!(id, r, ttl);
     return r;
   }
 }

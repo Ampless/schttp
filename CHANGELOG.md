@@ -1,3 +1,7 @@
+## 1.0.0-nullsafety.0
+
+* Null-safety
+
 ## 0.2.0
 
 * Support for using US-ASCII and Latin-1 when the server sends it.

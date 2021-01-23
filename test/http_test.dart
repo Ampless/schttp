@@ -8,8 +8,8 @@ enum HttpMethod {
   POST,
 }
 
-testCase httpTestCase(String url, HttpMethod method, Object body,
-        Map<String, String> headers) =>
+testCase httpTestCase(String url, HttpMethod method, Object? body,
+        Map<String, String>? headers) =>
     () async {
       var setCacheCalled = false;
       var getCacheCalled = false;
@@ -23,7 +23,7 @@ testCase httpTestCase(String url, HttpMethod method, Object body,
       if (method == HttpMethod.GET)
         await testClient.get(Uri.parse(url));
       else if (method == HttpMethod.POST)
-        await testClient.post(Uri.parse(url), body, body, headers);
+        await testClient.post(Uri.parse(url), body!, body as String, headers!);
       else
         throw 'The test is broken.';
       assert(setCacheCalled && getCacheCalled);
@@ -34,14 +34,12 @@ testCase getCase(String url) => httpTestCase(url, HttpMethod.GET, null, null);
 testCase postCase(String url, Object body, Map<String, String> headers) =>
     httpTestCase(url, HttpMethod.POST, body, headers);
 
-List<testCase> httpTestCases = [
+List<testCase> testCases = [
   getCase('https://example.com/'),
   postCase('https://example.com/', 'this is a test', {}),
 ];
 
 void main() {
-  group('HTTP', () {
-    var i = 1;
-    for (var testCase in httpTestCases) test('case ${i++}', testCase);
-  });
+  var i = 1;
+  for (var testCase in testCases) test('case ${i++}', testCase);
 }
