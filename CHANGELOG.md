@@ -1,3 +1,8 @@
+## 1.1.0
+
+* Made getCache and setCache non-nullable (if this breaks your code, your code's wrong)
+* Added readCache and writeCache parameters to disable caching dynamically
+
 ## 1.0.0-nullsafety.0
 
 * Null-safety

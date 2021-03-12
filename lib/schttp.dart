@@ -2,48 +2,55 @@ import 'dart:convert';
 import 'dart:io';
 
 class ScHttpClient {
-  var _client = HttpClient();
-  String? Function(String)? getCache;
-  void Function(String, String, Duration)? setCache;
+  final _client = HttpClient();
+  String? Function(String) getCache;
+  void Function(String, String, Duration) setCache;
 
-  ScHttpClient([this.getCache, this.setCache]);
+  ScHttpClient([this.getCache = _getCacheDmy, this.setCache = _setCacheDmy]);
+
+  static String? _getCacheDmy(String _) => null;
+  static void _setCacheDmy(String _, String __, Duration ___) {}
 
   Future<String> post(
     Uri url,
     Object body,
     String id,
     Map<String, String> headers, {
+    bool readCache = true,
+    bool writeCache = true,
     Duration? ttl,
   }) async {
     ttl ??= Duration(minutes: 15);
-    if (getCache != null) {
-      var cachedResp = getCache!(id);
-      if (cachedResp != null) return cachedResp;
-    }
-    var req = await _client.postUrl(url);
+    final cachedResp = readCache ? getCache(id) : null;
+    if (cachedResp != null) return cachedResp;
+    final req = await _client.postUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
     req.writeln(body);
-    return _finishRequest(req, id, ttl);
+    return _finishRequest(req, id, writeCache, ttl);
   }
 
-  Future<String> get(Uri url, {Duration? ttl}) async {
+  Future<String> get(
+    Uri url, {
+    bool readCache = true,
+    bool writeCache = true,
+    Duration? ttl,
+  }) async {
     ttl ??= Duration(days: 4);
-    if (getCache != null) {
-      var cachedResp = getCache!('$url');
-      if (cachedResp != null) return cachedResp;
-    }
-    return _finishRequest(await _client.getUrl(url), '$url', ttl);
+    final cachedResp = getCache('$url');
+    if (cachedResp != null) return cachedResp;
+    return _finishRequest(await _client.getUrl(url), '$url', writeCache, ttl);
   }
 
   Future<String> _finishRequest(
     HttpClientRequest req,
     String id,
+    bool writeCache,
     Duration ttl,
   ) async {
     await req.flush();
-    var res = await req.close();
-    var bytes = await res.toList();
-    var actualBytes = <int>[];
+    final res = await req.close();
+    final bytes = await res.toList();
+    final actualBytes = <int>[];
     for (var b in bytes) actualBytes.addAll(b);
 
     String r;
@@ -63,7 +70,7 @@ class ScHttpClient {
       r = String.fromCharCodes(actualBytes);
     }
 
-    if (res.statusCode == 200 && setCache != null) setCache!(id, r, ttl);
+    if (res.statusCode == 200 && writeCache) setCache(id, r, ttl);
     return r;
   }
 }
