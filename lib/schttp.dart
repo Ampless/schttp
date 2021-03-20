@@ -12,6 +12,25 @@ class ScHttpClient {
   static void _setCacheDmy(String _, String __, Duration ___) {}
 
   Future<String> post(
+    String url,
+    Object body,
+    String id,
+    Map<String, String> headers, {
+    bool readCache = true,
+    bool writeCache = true,
+    Duration? ttl,
+  }) =>
+      postUri(
+        Uri.parse(url),
+        body,
+        id,
+        headers,
+        readCache: readCache,
+        writeCache: writeCache,
+        ttl: ttl,
+      );
+
+  Future<String> postUri(
     Uri url,
     Object body,
     String id,
@@ -30,6 +49,19 @@ class ScHttpClient {
   }
 
   Future<String> get(
+    String url, {
+    bool readCache = true,
+    bool writeCache = true,
+    Duration? ttl,
+  }) =>
+      getUri(
+        Uri.parse(url),
+        readCache: readCache,
+        writeCache: writeCache,
+        ttl: ttl,
+      );
+
+  Future<String> getUri(
     Uri url, {
     bool readCache = true,
     bool writeCache = true,

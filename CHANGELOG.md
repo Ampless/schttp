@@ -1,3 +1,10 @@
+## 2.0.0
+
+* Renamed `get` to `getUri`
+* Renamed `post` to `postUri`
+* Added `get`
+* Added `post`
+
 ## 1.1.0
 
 * Made getCache and setCache non-nullable (if this breaks your code, your code's wrong)

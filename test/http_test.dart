@@ -3,36 +3,24 @@ import 'package:test/test.dart';
 
 typedef Future<Null> testCase();
 
-enum HttpMethod {
-  GET,
-  POST,
-}
-
-testCase httpTestCase(String url, HttpMethod method, Object? body,
-        Map<String, String>? headers) =>
+testCase httpTestCase(String url, bool get,
+        [String? body, Map<String, String>? headers]) =>
     () async {
-      var setCacheCalled = false;
-      var getCacheCalled = false;
-      var testClient = ScHttpClient(
+      var setCacheCalled = false, getCacheCalled = false;
+      final http = ScHttpClient(
         (_) {
           getCacheCalled = true;
           return null;
         },
         (_, __, ___) => setCacheCalled = true,
       );
-      if (method == HttpMethod.GET)
-        await testClient.get(Uri.parse(url));
-      else if (method == HttpMethod.POST)
-        await testClient.post(Uri.parse(url), body!, body as String, headers!);
-      else
-        throw 'The test is broken.';
+      await (get ? http.get(url) : http.post(url, body!, body, headers!));
       assert(setCacheCalled && getCacheCalled);
     };
 
-testCase getCase(String url) => httpTestCase(url, HttpMethod.GET, null, null);
-
-testCase postCase(String url, Object body, Map<String, String> headers) =>
-    httpTestCase(url, HttpMethod.POST, body, headers);
+testCase getCase(String url) => httpTestCase(url, true);
+testCase postCase(String url, String body, Map<String, String> headers) =>
+    httpTestCase(url, false, body, headers);
 
 List<testCase> testCases = [
   getCase('https://example.com/'),
@@ -41,5 +29,5 @@ List<testCase> testCases = [
 
 void main() {
   var i = 1;
-  for (var testCase in testCases) test('case ${i++}', testCase);
+  for (final testCase in testCases) test('case ${i++}', testCase);
 }
