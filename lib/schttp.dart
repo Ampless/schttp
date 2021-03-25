@@ -12,19 +12,14 @@ class ScHttpClient {
     this.getCache = _getCacheDmy,
     this.setCache = _setCacheDmy,
     String? userAgent,
-    List<String> Function(Uri) findProxies = _findProxyDmy,
+    String Function(Uri)? findProxy,
   }) {
     if (userAgent != null) _client.userAgent = userAgent;
-    _client.findProxy = (u) {
-      final p = findProxies(u);
-      if (p.length == 0) return 'DIRECT';
-      return p.map((e) => 'PROXY $e').reduce((v, e) => '$v; $e');
-    };
+    if (findProxy != null) _client.findProxy = findProxy;
   }
 
   static String? _getCacheDmy(String _) => null;
   static void _setCacheDmy(String _, String __, Duration ___) {}
-  static List<String> _findProxyDmy(Uri _) => [];
 
   Future<String> post(
     String url,
