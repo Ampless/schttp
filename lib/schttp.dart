@@ -98,9 +98,11 @@ class ScHttpClient {
 
   Future<Uint8List> _finishBin(HttpClientRequest req) async {
     final res = await req.close();
-    final bytes = Uint8List(0);
-    for (final e in await res.toList()) bytes.addAll(e);
-    return bytes;
+    final b = await res.toList();
+    return Uint8List.fromList(b.reduce((value, element) {
+      value.addAll(element);
+      return value;
+    }));
   }
 
   Future<String> _finishRequest(
@@ -110,8 +112,11 @@ class ScHttpClient {
     Duration ttl,
   ) async {
     final res = await req.close();
-    final bytes = Uint8List(0);
-    for (final e in await res.toList()) bytes.addAll(e);
+    final b = await res.toList();
+    final bytes = b.reduce((value, element) {
+      value.addAll(element);
+      return value;
+    });
 
     String r;
     try {
