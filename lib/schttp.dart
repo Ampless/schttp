@@ -6,10 +6,23 @@ class ScHttpClient {
   String? Function(String) getCache;
   void Function(String, String, Duration) setCache;
 
-  ScHttpClient([this.getCache = _getCacheDmy, this.setCache = _setCacheDmy]);
+  ScHttpClient({
+    this.getCache = _getCacheDmy,
+    this.setCache = _setCacheDmy,
+    String? userAgent,
+    List<String> Function(Uri) findProxy = _findProxyDmy,
+  }) {
+    if (userAgent != null) _client.userAgent = userAgent;
+    _client.findProxy = (u) {
+      final p = findProxy(u);
+      if (p == []) return 'DIRECT';
+      return p.map((e) => 'PROXY $e').reduce((v, e) => '$v; $e');
+    };
+  }
 
   static String? _getCacheDmy(String _) => null;
   static void _setCacheDmy(String _, String __, Duration ___) {}
+  static List<String> _findProxyDmy(Uri _) => [];
 
   Future<String> post(
     String url,

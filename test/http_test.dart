@@ -8,11 +8,11 @@ testCase httpTestCase(String url, bool get,
     () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
-        (_) {
+        getCache: (_) {
           getCacheCalled = true;
           return null;
         },
-        (_, __, ___) => setCacheCalled = true,
+        setCache: (_, __, ___) => setCacheCalled = true,
       );
       await (get ? http.get(url) : http.post(url, body!, body, headers!));
       assert(setCacheCalled && getCacheCalled);
