@@ -1,3 +1,9 @@
+## 3.0.0
+
+* Added support for Proxies and custom User Agents
+* Made `getCache` and `setCache` named parameters instead of positional ones
+* Added `getBin` and `getBinUri` for binary data
+
 ## 2.0.0
 
 * Renamed `get` to `getUri`
