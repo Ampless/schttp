@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'dart:typed_data';
+
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(String) getCache;
@@ -33,15 +35,7 @@ class ScHttpClient {
     bool writeCache = true,
     Duration? ttl,
   }) =>
-      postUri(
-        Uri.parse(url),
-        body,
-        id,
-        headers,
-        readCache: readCache,
-        writeCache: writeCache,
-        ttl: ttl,
-      );
+      _post(Uri.parse(url), body, id, headers, readCache, writeCache, ttl);
 
   Future<String> postUri(
     Uri url,
@@ -51,15 +45,8 @@ class ScHttpClient {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
-  }) async {
-    ttl ??= Duration(minutes: 15);
-    final cachedResp = readCache ? getCache(id) : null;
-    if (cachedResp != null) return cachedResp;
-    final req = await _client.postUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
-    req.writeln(body);
-    return _finishRequest(req, id, writeCache, ttl);
-  }
+  }) =>
+      _post(url, body, id, headers, readCache, writeCache, ttl);
 
   Future<String> get(
     String url, {
@@ -67,23 +54,58 @@ class ScHttpClient {
     bool writeCache = true,
     Duration? ttl,
   }) =>
-      getUri(
-        Uri.parse(url),
-        readCache: readCache,
-        writeCache: writeCache,
-        ttl: ttl,
-      );
+      _get(Uri.parse(url), url, readCache, writeCache, ttl);
 
   Future<String> getUri(
     Uri url, {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
-  }) async {
-    ttl ??= Duration(days: 4);
-    final cachedResp = getCache('$url');
+  }) =>
+      _get(url, '$url', readCache, writeCache, ttl);
+
+  Future<String> _post(
+    Uri url,
+    Object body,
+    String id,
+    Map<String, String> headers,
+    bool readCache,
+    bool writeCache,
+    Duration? ttl,
+  ) async {
+    final cachedResp = readCache ? getCache(id) : null;
     if (cachedResp != null) return cachedResp;
-    return _finishRequest(await _client.getUrl(url), '$url', writeCache, ttl);
+    final req = await _client.postUrl(url);
+    headers.forEach((k, v) => req.headers.add(k, v));
+    req.writeln(body);
+    return _finishRequest(req, id, writeCache, ttl ?? Duration(minutes: 15));
+  }
+
+  Future<String> _get(
+    Uri url,
+    String strurl,
+    bool readCache,
+    bool writeCache,
+    Duration? ttl,
+  ) async =>
+      (readCache ? getCache(strurl) : null) ??
+      await _finishRequest(
+        await _client.getUrl(url),
+        strurl,
+        writeCache,
+        ttl ?? Duration(days: 4),
+      );
+
+  Future<Uint8List> getBin(String url) => getBinUri(Uri.parse(url));
+
+  Future<Uint8List> getBinUri(Uri url) async =>
+      _finishBin(await _client.getUrl(url));
+
+  Future<Uint8List> _finishBin(HttpClientRequest req) async {
+    final res = await req.close();
+    final bytes = Uint8List(0);
+    for (final e in await res.toList()) bytes.addAll(e);
+    return bytes;
   }
 
   Future<String> _finishRequest(
@@ -92,11 +114,9 @@ class ScHttpClient {
     bool writeCache,
     Duration ttl,
   ) async {
-    await req.flush();
     final res = await req.close();
-    final bytes = await res.toList();
-    final actualBytes = <int>[];
-    for (var b in bytes) actualBytes.addAll(b);
+    final bytes = Uint8List(0);
+    for (final e in await res.toList()) bytes.addAll(e);
 
     String r;
     try {
@@ -110,9 +130,9 @@ class ScHttpClient {
         charset = latin1.decode;
       else
         charset = utf8.decode;
-      r = charset(actualBytes);
+      r = charset(bytes);
     } catch (e) {
-      r = String.fromCharCodes(actualBytes);
+      r = String.fromCharCodes(bytes);
     }
 
     if (res.statusCode == 200 && writeCache) setCache(id, r, ttl);
