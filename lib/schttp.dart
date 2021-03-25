@@ -7,10 +7,12 @@ class ScHttpClient {
   final _client = HttpClient();
   String? Function(String) getCache;
   void Function(String, String, Duration) setCache;
+  bool forceCache;
 
   ScHttpClient({
     this.getCache = _getCacheDmy,
     this.setCache = _setCacheDmy,
+    this.forceCache = false,
     String? userAgent,
     String Function(Uri)? findProxy,
   }) {
@@ -68,7 +70,7 @@ class ScHttpClient {
     bool writeCache,
     Duration? ttl,
   ) async {
-    final cachedResp = readCache ? getCache(id) : null;
+    final cachedResp = (readCache || forceCache) ? getCache(id) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.postUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
@@ -83,7 +85,7 @@ class ScHttpClient {
     bool writeCache,
     Duration? ttl,
   ) async =>
-      (readCache ? getCache(strurl) : null) ??
+      ((readCache || forceCache) ? getCache(strurl) : null) ??
       await _finishRequest(
         await _client.getUrl(url),
         strurl,
@@ -129,7 +131,8 @@ class ScHttpClient {
       r = String.fromCharCodes(bytes);
     }
 
-    if (res.statusCode == 200 && writeCache) setCache(id, r, ttl);
+    if (res.statusCode == 200 && (writeCache || forceCache))
+      setCache(id, r, ttl);
     return r;
   }
 }

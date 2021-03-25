@@ -1,3 +1,7 @@
+## 3.1.0
+
+* Added `forceCache` to force caching even though some library might not want you to
+
 ## 3.0.0
 
 * Added support for Proxies and custom User Agents
