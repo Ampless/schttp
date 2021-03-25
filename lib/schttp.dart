@@ -12,12 +12,12 @@ class ScHttpClient {
     this.getCache = _getCacheDmy,
     this.setCache = _setCacheDmy,
     String? userAgent,
-    List<String> Function(Uri) findProxy = _findProxyDmy,
+    List<String> Function(Uri) findProxies = _findProxyDmy,
   }) {
     if (userAgent != null) _client.userAgent = userAgent;
     _client.findProxy = (u) {
-      final p = findProxy(u);
-      if (p == []) return 'DIRECT';
+      final p = findProxies(u);
+      if (p.length == 0) return 'DIRECT';
       return p.map((e) => 'PROXY $e').reduce((v, e) => '$v; $e');
     };
   }
