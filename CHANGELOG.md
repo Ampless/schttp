@@ -1,3 +1,7 @@
+## 3.2.0
+
+* Added support for custom `headers` to `get` and `getUri`
+
 ## 3.1.0
 
 * Added `forceCache` to force caching even though some library might not want you to

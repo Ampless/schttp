@@ -23,6 +23,7 @@ class ScHttpClient {
   static String? _getCacheDmy(String _) => null;
   static void _setCacheDmy(String _, String __, Duration ___) {}
 
+  //TODO: this a very bad api and really has to be changed in the next major
   Future<String> post(
     String url,
     Object body,
@@ -50,16 +51,18 @@ class ScHttpClient {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
+    Map<String, String> headers = const {},
   }) =>
-      _get(Uri.parse(url), url, readCache, writeCache, ttl);
+      _get(Uri.parse(url), url, headers, readCache, writeCache, ttl);
 
   Future<String> getUri(
     Uri url, {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
+    Map<String, String> headers = const {},
   }) =>
-      _get(url, '$url', readCache, writeCache, ttl);
+      _get(url, '$url', headers, readCache, writeCache, ttl);
 
   Future<String> _post(
     Uri url,
@@ -80,18 +83,18 @@ class ScHttpClient {
 
   Future<String> _get(
     Uri url,
-    String strurl,
+    String id,
+    Map<String, String> headers,
     bool readCache,
     bool writeCache,
     Duration? ttl,
-  ) async =>
-      ((readCache || forceCache) ? getCache(strurl) : null) ??
-      await _finishRequest(
-        await _client.getUrl(url),
-        strurl,
-        writeCache,
-        ttl ?? Duration(days: 4),
-      );
+  ) async {
+    final cachedResp = (readCache || forceCache) ? getCache(id) : null;
+    if (cachedResp != null) return cachedResp;
+    final req = await _client.getUrl(url);
+    headers.forEach((k, v) => req.headers.add(k, v));
+    return _finishRequest(req, id, writeCache, ttl ?? Duration(days: 4));
+  }
 
   Future<Uint8List> getBin(String url) => getBinUri(Uri.parse(url));
 
