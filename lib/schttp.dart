@@ -7,12 +7,17 @@ class ScHttpClient {
   final _client = HttpClient();
   String? Function(String) getCache;
   void Function(String, String, Duration) setCache;
-  bool forceCache;
+  Uint8List? Function(String) getBinCache;
+  void Function(String, Uint8List, Duration) setBinCache;
+  bool forceCache, forceBinCache;
 
   ScHttpClient({
     this.getCache = _getCacheDmy,
     this.setCache = _setCacheDmy,
+    this.getBinCache = _getBinCacheDmy,
+    this.setBinCache = _setCacheDmy,
     this.forceCache = false,
+    this.forceBinCache = false,
     String? userAgent,
     String Function(Uri)? findProxy,
   }) {
@@ -20,8 +25,9 @@ class ScHttpClient {
     if (findProxy != null) _client.findProxy = findProxy;
   }
 
-  static String? _getCacheDmy(String _) => null;
-  static void _setCacheDmy(String _, String __, Duration ___) {}
+  static String? _getCacheDmy(_) => null;
+  static Uint8List? _getBinCacheDmy(_) => null;
+  static void _setCacheDmy(_, __, ___) {}
 
   //TODO: this a very bad api and really has to be changed in the next major
   Future<String> post(
@@ -96,15 +102,47 @@ class ScHttpClient {
     return _finishRequest(req, id, writeCache, ttl ?? Duration(days: 4));
   }
 
-  Future<Uint8List> getBin(String url) => getBinUri(Uri.parse(url));
+  Future<Uint8List> getBin(
+    String url, {
+    bool readCache = false,
+    bool writeCache = false,
+    Duration? ttl,
+  }) =>
+      _getBin(Uri.parse(url), url, readCache, writeCache, ttl);
 
-  Future<Uint8List> getBinUri(Uri url) async =>
-      _finishBin(await _client.getUrl(url));
+  Future<Uint8List> getBinUri(
+    Uri url, {
+    bool readCache = false,
+    bool writeCache = false,
+    Duration? ttl,
+  }) async =>
+      _getBin(url, url.toString(), readCache, writeCache, ttl);
 
-  Future<Uint8List> _finishBin(HttpClientRequest req) async {
+  Future<Uint8List> _getBin(
+    Uri url,
+    String id,
+    bool readCache,
+    bool writeCache,
+    Duration? ttl,
+  ) async {
+    final cachedResp = (readCache || forceBinCache) ? getBinCache(id) : null;
+    if (cachedResp != null) return cachedResp;
+    final req = await _client.getUrl(url);
+    return _finishBin(req, id, writeCache, ttl ?? Duration(days: 4));
+  }
+
+  Future<Uint8List> _finishBin(
+    HttpClientRequest req,
+    String id,
+    bool writeCache,
+    Duration ttl,
+  ) async {
     final res = await req.close();
     final b = await res.toList();
-    return Uint8List.fromList(b.reduce((v, e) => [...v, ...e]));
+    final bin = Uint8List.fromList(b.reduce((v, e) => [...v, ...e]));
+    if (res.statusCode == 200 && (writeCache || forceBinCache))
+      setBinCache(id, bin, ttl);
+    return bin;
   }
 
   Future<String> _finishRequest(
