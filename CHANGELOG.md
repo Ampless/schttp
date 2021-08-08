@@ -1,5 +1,9 @@
 ## 3.3.0
 
+* `getBinCache`, `setBinCache` and `forceBinCache` for opt-in binary caching
+* `defaultCharset` and `forcedCharset` for better charset matching
+(useful for dealing with weird servers)
+
 ## 3.2.1
 
 * Switched from `dart:io` to `universal_io` to support Web apps
@@ -27,7 +31,7 @@
 
 ## 1.1.0
 
-* Made getCache and setCache non-nullable (if this breaks your code, your code's wrong)
+* Made `getCache` and `setCache` non-nullable (if this breaks your code, your code's wrong)
 * Added readCache and writeCache parameters to disable caching dynamically
 
 ## 1.0.0-nullsafety.0
@@ -40,6 +44,4 @@
 
 ## 0.1.0
 
-* The initial release.
-* It is mostly just 1:1 copied from Amplessimus.
-* It can GET and POST and use a cache.
+* Initial release: copied from Amplessimus, can GET and POST text with caching
