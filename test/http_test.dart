@@ -3,9 +3,7 @@ import 'package:test/test.dart';
 
 typedef Future<Null> testCase();
 
-testCase httpTestCase(String url, bool get,
-        [String? body, Map<String, String>? headers]) =>
-    () async {
+testCase httpTestCase(String url, bool get, [String? body]) => () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
         getCache: (_) {
@@ -14,17 +12,16 @@ testCase httpTestCase(String url, bool get,
         },
         setCache: (_, __, ___) => setCacheCalled = true,
       );
-      await (get ? http.get(url) : http.post(url, body!, body, headers!));
+      await (get ? http.get(url) : http.post(url, body!));
       assert(setCacheCalled && getCacheCalled);
     };
 
 testCase getCase(String url) => httpTestCase(url, true);
-testCase postCase(String url, String body, Map<String, String> headers) =>
-    httpTestCase(url, false, body, headers);
+testCase postCase(String url, String body) => httpTestCase(url, false, body);
 
 List<testCase> testCases = [
   getCase('https://example.com/'),
-  postCase('https://example.com/', 'this is a test', {}),
+  postCase('https://example.com/', 'this is a test'),
 ];
 
 void main() {

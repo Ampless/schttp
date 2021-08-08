@@ -6,9 +6,9 @@ import 'dart:typed_data';
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(String) getCache;
-  void Function(String, String, Duration) setCache;
+  void Function(String, String, Duration?) setCache;
   Uint8List? Function(String) getBinCache;
-  void Function(String, Uint8List, Duration) setBinCache;
+  void Function(String, Uint8List, Duration?) setBinCache;
   bool forceCache, forceBinCache;
 
   ScHttpClient({
@@ -29,34 +29,34 @@ class ScHttpClient {
   static Uint8List? _getBinCacheDmy(_) => null;
   static void _setCacheDmy(_, __, ___) {}
 
-  //TODO: this a very bad api and really has to be changed in the next major
+  // TODO: the default id is really bad maybe i can come up with a better solution
   Future<String> post(
     String url,
-    Object body,
-    String id,
-    Map<String, String> headers, {
+    Object body, {
+    String? id,
+    Map<String, String> headers = const {},
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _post(Uri.parse(url), body, id, headers, readCache, writeCache, ttl,
-          defaultCharset, forcedCharset);
+      _post(Uri.parse(url), body, id ?? '$body://;$url', headers, readCache,
+          writeCache, ttl, defaultCharset, forcedCharset);
 
   Future<String> postUri(
     Uri url,
-    Object body,
-    String id,
-    Map<String, String> headers, {
+    Object body, {
+    String? id,
+    Map<String, String> headers = const {},
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _post(url, body, id, headers, readCache, writeCache, ttl, defaultCharset,
-          forcedCharset);
+      _post(url, body, id ?? '$body://;$url', headers, readCache, writeCache,
+          ttl, defaultCharset, forcedCharset);
 
   Future<String> get(
     String url, {
@@ -98,8 +98,8 @@ class ScHttpClient {
     final req = await _client.postUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
     req.writeln(body);
-    return _finishRequest(req, id, writeCache, ttl ?? Duration(minutes: 15),
-        defaultCharset, forcedCharset);
+    return _finishRequest(
+        req, id, writeCache, ttl, defaultCharset, forcedCharset);
   }
 
   Future<String> _get(
@@ -116,24 +116,22 @@ class ScHttpClient {
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
-    return _finishRequest(req, id, writeCache, ttl ?? Duration(days: 4),
-        defaultCharset, forcedCharset);
+    return _finishRequest(
+        req, id, writeCache, ttl, defaultCharset, forcedCharset);
   }
 
-  // TODO: turn on caching by default in next major
   Future<Uint8List> getBin(
     String url, {
-    bool readCache = false,
-    bool writeCache = false,
+    bool readCache = true,
+    bool writeCache = true,
     Duration? ttl,
   }) =>
       _getBin(Uri.parse(url), url, readCache, writeCache, ttl);
 
-  // TODO: turn on caching by default in next major
   Future<Uint8List> getBinUri(
     Uri url, {
-    bool readCache = false,
-    bool writeCache = false,
+    bool readCache = true,
+    bool writeCache = true,
     Duration? ttl,
   }) async =>
       _getBin(url, url.toString(), readCache, writeCache, ttl);
@@ -148,14 +146,14 @@ class ScHttpClient {
     final cachedResp = (readCache || forceBinCache) ? getBinCache(id) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    return _finishBin(req, id, writeCache, ttl ?? Duration(days: 4));
+    return _finishBin(req, id, writeCache, ttl);
   }
 
   Future<Uint8List> _finishBin(
     HttpClientRequest req,
     String id,
     bool writeCache,
-    Duration ttl,
+    Duration? ttl,
   ) async {
     final res = await req.close();
     final b = await res.toList();
@@ -169,7 +167,7 @@ class ScHttpClient {
     HttpClientRequest req,
     String id,
     bool writeCache,
-    Duration ttl,
+    Duration? ttl,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   ) async {
