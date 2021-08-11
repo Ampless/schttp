@@ -1,3 +1,11 @@
+## 4.0.0
+
+* A better API for `post` and `postUri`
+* `readCache` and `writeCache` now default to `true` in `getBin` and `getBinUri`
+* Missing `ttl`s now get passed onto the `get cache` functions, so you can
+handle them yourself
+* Added `getPostCache` and `setPostCache` to also outsource the id generation
+
 ## 3.3.0
 
 * `getBinCache`, `setBinCache` and `forceBinCache` for opt-in binary caching

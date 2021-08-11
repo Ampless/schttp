@@ -5,8 +5,10 @@ import 'dart:typed_data';
 
 class ScHttpClient {
   final _client = HttpClient();
-  String? Function(String) getCache;
-  void Function(String, String, Duration?) setCache;
+  String? Function(Uri) getCache;
+  void Function(Uri, String, Duration?) setCache;
+  String? Function(Uri, Object) getPostCache;
+  void Function(String, String, String, Duration?) setPostCache;
   Uint8List? Function(String) getBinCache;
   void Function(String, Uint8List, Duration?) setBinCache;
   bool forceCache, forceBinCache;
@@ -14,6 +16,8 @@ class ScHttpClient {
   ScHttpClient({
     this.getCache = _getCacheDmy,
     this.setCache = _setCacheDmy,
+    this.getPostCache = _getPostCacheDmy,
+    this.setPostCache = _setPostCacheDmy,
     this.getBinCache = _getBinCacheDmy,
     this.setBinCache = _setCacheDmy,
     this.forceCache = false,
@@ -26,14 +30,14 @@ class ScHttpClient {
   }
 
   static String? _getCacheDmy(_) => null;
+  static String? _getPostCacheDmy(_, __) => null;
   static Uint8List? _getBinCacheDmy(_) => null;
   static void _setCacheDmy(_, __, ___) {}
+  static void _setPostCacheDmy(_, __, ___, ____) {}
 
-  // TODO: the default id is really bad maybe i can come up with a better solution
   Future<String> post(
     String url,
     Object body, {
-    String? id,
     Map<String, String> headers = const {},
     bool readCache = true,
     bool writeCache = true,
@@ -41,13 +45,12 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _post(Uri.parse(url), body, id ?? '$body://;$url', headers, readCache,
-          writeCache, ttl, defaultCharset, forcedCharset);
+      _post(Uri.parse(url), body, headers, readCache, writeCache, ttl,
+          defaultCharset, forcedCharset);
 
   Future<String> postUri(
     Uri url,
     Object body, {
-    String? id,
     Map<String, String> headers = const {},
     bool readCache = true,
     bool writeCache = true,
@@ -55,8 +58,8 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _post(url, body, id ?? '$body://;$url', headers, readCache, writeCache,
-          ttl, defaultCharset, forcedCharset);
+      _post(url, body, headers, readCache, writeCache, ttl, defaultCharset,
+          forcedCharset);
 
   Future<String> get(
     String url, {
@@ -67,8 +70,13 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _get(Uri.parse(url), url, headers, readCache, writeCache, ttl,
-          defaultCharset, forcedCharset);
+      getUri(Uri.parse(url),
+          headers: headers,
+          readCache: readCache,
+          writeCache: writeCache,
+          ttl: ttl,
+          defaultCharset: defaultCharset,
+          forcedCharset: forcedCharset);
 
   Future<String> getUri(
     Uri url, {
@@ -78,46 +86,34 @@ class ScHttpClient {
     Map<String, String> headers = const {},
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
-  }) =>
-      _get(url, '$url', headers, readCache, writeCache, ttl, defaultCharset,
-          forcedCharset);
-
-  Future<String> _post(
-    Uri url,
-    Object body,
-    String id,
-    Map<String, String> headers,
-    bool readCache,
-    bool writeCache,
-    Duration? ttl,
-    String Function(List<int>)? defaultCharset,
-    String Function(List<int>)? forcedCharset,
-  ) async {
-    final cachedResp = (readCache || forceCache) ? getCache(id) : null;
-    if (cachedResp != null) return cachedResp;
-    final req = await _client.postUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
-    req.writeln(body);
-    return _finishRequest(
-        req, id, writeCache, ttl, defaultCharset, forcedCharset);
-  }
-
-  Future<String> _get(
-    Uri url,
-    String id,
-    Map<String, String> headers,
-    bool readCache,
-    bool writeCache,
-    Duration? ttl,
-    String Function(List<int>)? defaultCharset,
-    String Function(List<int>)? forcedCharset,
-  ) async {
-    final cachedResp = (readCache || forceCache) ? getCache(id) : null;
+  }) async {
+    final cachedResp = (readCache || forceCache) ? getCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
     return _finishRequest(
-        req, id, writeCache, ttl, defaultCharset, forcedCharset);
+        url, req, writeCache, ttl, defaultCharset, forcedCharset);
+  }
+
+  Future<String> _post(
+    Uri url,
+    Object body,
+    Map<String, String> headers,
+    bool readCache,
+    bool writeCache,
+    Duration? ttl,
+    String Function(List<int>)? defaultCharset,
+    String Function(List<int>)? forcedCharset,
+  ) async {
+    final cachedResp =
+        (readCache || forceCache) ? getPostCache(url, body) : null;
+    if (cachedResp != null) return cachedResp;
+    final req = await _client.postUrl(url);
+    headers.forEach((k, v) => req.headers.add(k, v));
+    req.writeln(body);
+    // TODO: fix
+    return _finishRequest(
+        url, req, writeCache, ttl, defaultCharset, forcedCharset);
   }
 
   Future<Uint8List> getBin(
@@ -164,8 +160,8 @@ class ScHttpClient {
   }
 
   Future<String> _finishRequest(
+    Uri url,
     HttpClientRequest req,
-    String id,
     bool writeCache,
     Duration? ttl,
     String Function(List<int>)? defaultCharset,
@@ -179,26 +175,24 @@ class ScHttpClient {
     if (forcedCharset != null)
       r = forcedCharset(bytes);
     else {
+      String Function(List<int>) charset = defaultCharset ?? utf8.decode;
       try {
-        String Function(List<int>) charset;
-        var cs = res.headers.contentType!.charset!.toLowerCase();
-        if (cs == 'utf-8')
-          charset = utf8.decode;
-        else if (cs == 'us' || cs == 'us-ascii' || cs == 'ascii')
-          charset = ascii.decode;
-        else if (cs == 'latin1' || cs == 'l1')
-          charset = latin1.decode;
-        else
-          charset = defaultCharset ?? utf8.decode;
-        r = charset(bytes);
-      } catch (e) {
-        // TODO: in the next major this should probably be defaultCharset??utf8
-        r = String.fromCharCodes(bytes);
-      }
+        charset = {
+          'utf8': utf8,
+          'us': ascii,
+          'usascii': ascii,
+          'ascii': ascii,
+          'latin1': latin1,
+          'l1': latin1,
+        }[res.headers.contentType!.charset!.toLowerCase().replaceAll('-', '')]!
+            .decode;
+      } on Exception {}
+      r = charset(bytes);
     }
 
     if (res.statusCode == 200 && (writeCache || forceCache))
-      setCache(id, r, ttl);
+      // TODO: this is what's wrong rn, it fucks posts up
+      setCache(url, r, ttl);
     return r;
   }
 }
