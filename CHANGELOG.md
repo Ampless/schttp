@@ -5,6 +5,7 @@
 * Missing `ttl`s now get passed onto the `get cache` functions, so you can
 handle them yourself
 * Added `getPostCache` and `setPostCache` to also outsource the id generation
+* Adjusted the caching APIs to operate on `Uri`s instead of `String`s for urls
 
 ## 3.3.0
 

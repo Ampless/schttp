@@ -8,9 +8,9 @@ class ScHttpClient {
   String? Function(Uri) getCache;
   void Function(Uri, String, Duration?) setCache;
   String? Function(Uri, Object) getPostCache;
-  void Function(String, String, String, Duration?) setPostCache;
-  Uint8List? Function(String) getBinCache;
-  void Function(String, Uint8List, Duration?) setBinCache;
+  void Function(Uri, Object, String, Duration?) setPostCache;
+  Uint8List? Function(Uri) getBinCache;
+  void Function(Uri, Uint8List, Duration?) setBinCache;
   bool forceCache, forceBinCache;
 
   ScHttpClient({
@@ -91,8 +91,8 @@ class ScHttpClient {
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
-    return _finishRequest(
-        url, req, writeCache, ttl, defaultCharset, forcedCharset);
+    return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
+        (r) => setCache(url, r, ttl));
   }
 
   Future<String> _post(
@@ -111,9 +111,8 @@ class ScHttpClient {
     final req = await _client.postUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
     req.writeln(body);
-    // TODO: fix
-    return _finishRequest(
-        url, req, writeCache, ttl, defaultCharset, forcedCharset);
+    return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
+        (r) => setPostCache(url, body, r, ttl));
   }
 
   Future<Uint8List> getBin(
@@ -122,7 +121,7 @@ class ScHttpClient {
     bool writeCache = true,
     Duration? ttl,
   }) =>
-      _getBin(Uri.parse(url), url, readCache, writeCache, ttl);
+      _getBin(Uri.parse(url), readCache, writeCache, ttl);
 
   Future<Uint8List> getBinUri(
     Uri url, {
@@ -130,24 +129,23 @@ class ScHttpClient {
     bool writeCache = true,
     Duration? ttl,
   }) async =>
-      _getBin(url, url.toString(), readCache, writeCache, ttl);
+      _getBin(url, readCache, writeCache, ttl);
 
   Future<Uint8List> _getBin(
     Uri url,
-    String id,
     bool readCache,
     bool writeCache,
     Duration? ttl,
   ) async {
-    final cachedResp = (readCache || forceBinCache) ? getBinCache(id) : null;
+    final cachedResp = (readCache || forceBinCache) ? getBinCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    return _finishBin(req, id, writeCache, ttl);
+    return _finishBin(req, url, writeCache, ttl);
   }
 
   Future<Uint8List> _finishBin(
     HttpClientRequest req,
-    String id,
+    Uri url,
     bool writeCache,
     Duration? ttl,
   ) async {
@@ -155,17 +153,16 @@ class ScHttpClient {
     final b = await res.toList();
     final bin = Uint8List.fromList(b.reduce((v, e) => [...v, ...e]));
     if (res.statusCode == 200 && (writeCache || forceBinCache))
-      setBinCache(id, bin, ttl);
+      setBinCache(url, bin, ttl);
     return bin;
   }
 
   Future<String> _finishRequest(
-    Uri url,
     HttpClientRequest req,
     bool writeCache,
-    Duration? ttl,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
+    void Function(String) setc,
   ) async {
     final res = await req.close();
     final b = await res.toList();
@@ -190,9 +187,7 @@ class ScHttpClient {
       r = charset(bytes);
     }
 
-    if (res.statusCode == 200 && (writeCache || forceCache))
-      // TODO: this is what's wrong rn, it fucks posts up
-      setCache(url, r, ttl);
+    if (res.statusCode == 200 && (writeCache || forceCache)) setc(r);
     return r;
   }
 }
