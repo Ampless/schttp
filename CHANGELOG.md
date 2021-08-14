@@ -6,6 +6,7 @@
 handle them yourself
 * Added `getPostCache` and `setPostCache` to also outsource the id generation
 * Adjusted the caching APIs to operate on `Uri`s instead of `String`s for urls
+* Changed the charset matching behavior to make more sense for most use-cases
 
 ## 3.3.0
 
