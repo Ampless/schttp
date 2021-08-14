@@ -183,7 +183,7 @@ class ScHttpClient {
           'l1': latin1,
         }[res.headers.contentType!.charset!.toLowerCase().replaceAll('-', '')]!
             .decode;
-      } on Exception {}
+      } on Object {}
       r = charset(bytes);
     }
 
