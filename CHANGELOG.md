@@ -1,3 +1,7 @@
+## 4.1.0
+
+* Added support for custom `headers` to `getBin` and `getBinUri`
+
 ## 4.0.0
 
 * A better API for `post` and `postUri`

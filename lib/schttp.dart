@@ -120,26 +120,30 @@ class ScHttpClient {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
+    Map<String, String> headers = const {},
   }) =>
-      _getBin(Uri.parse(url), readCache, writeCache, ttl);
+      _getBin(Uri.parse(url), readCache, writeCache, ttl, headers);
 
   Future<Uint8List> getBinUri(
     Uri url, {
     bool readCache = true,
     bool writeCache = true,
     Duration? ttl,
+    Map<String, String> headers = const {},
   }) async =>
-      _getBin(url, readCache, writeCache, ttl);
+      _getBin(url, readCache, writeCache, ttl, headers);
 
   Future<Uint8List> _getBin(
     Uri url,
     bool readCache,
     bool writeCache,
     Duration? ttl,
+    Map<String, String> headers,
   ) async {
     final cachedResp = (readCache || forceBinCache) ? getBinCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
+    headers.forEach((k, v) => req.headers.add(k, v));
     return _finishBin(req, url, writeCache, ttl);
   }
 
