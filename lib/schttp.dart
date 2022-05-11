@@ -13,7 +13,8 @@ class ScHttpClient {
   Uint8List? Function(Uri) getBinCache;
   void Function(Uri, Uint8List, Duration?) setBinCache;
   // TODO: why tf is there no forcePostCache?? (also cant we just remove them,
-  // because you can extend anyways)
+  // because you can extend anyways; we could then also ship a MockClient like
+  // package:http does)
   bool forceCache, forceBinCache;
 
   ScHttpClient({
@@ -48,8 +49,13 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
-      _post(Uri.parse(url), body, headers, readCache, writeCache, ttl,
-          defaultCharset, forcedCharset);
+      postUri(Uri.parse(url), body,
+          headers: headers,
+          readCache: readCache,
+          writeCache: writeCache,
+          ttl: ttl,
+          defaultCharset: defaultCharset,
+          forcedCharset: forcedCharset);
 
   Future<String> postUri(
     Uri url,
@@ -60,10 +66,16 @@ class ScHttpClient {
     Duration? ttl,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
-  }) =>
-      // TODO: merge _post in here
-      _post(url, body, headers, readCache, writeCache, ttl, defaultCharset,
-          forcedCharset);
+  }) async {
+    final cachedResp =
+        (readCache || forceCache) ? getPostCache(url, body) : null;
+    if (cachedResp != null) return cachedResp;
+    final req = await _client.postUrl(url);
+    headers.forEach((k, v) => req.headers.add(k, v));
+    req.writeln(body);
+    return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
+        (r) => setPostCache(url, body, r, ttl));
+  }
 
   Future<String> get(
     String url, {
@@ -100,26 +112,6 @@ class ScHttpClient {
         (r) => setCache(url, r, ttl));
   }
 
-  Future<String> _post(
-    Uri url,
-    Object body,
-    Map<String, String> headers,
-    bool readCache,
-    bool writeCache,
-    Duration? ttl,
-    String Function(List<int>)? defaultCharset,
-    String Function(List<int>)? forcedCharset,
-  ) async {
-    final cachedResp =
-        (readCache || forceCache) ? getPostCache(url, body) : null;
-    if (cachedResp != null) return cachedResp;
-    final req = await _client.postUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
-    req.writeln(body);
-    return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
-        (r) => setPostCache(url, body, r, ttl));
-  }
-
   Future<Uint8List> getBin(
     String url, {
     bool readCache = true,
@@ -127,7 +119,11 @@ class ScHttpClient {
     Duration? ttl,
     Map<String, String> headers = const {},
   }) =>
-      _getBin(Uri.parse(url), readCache, writeCache, ttl, headers);
+      getBinUri(Uri.parse(url),
+          readCache: readCache,
+          writeCache: writeCache,
+          ttl: ttl,
+          headers: headers);
 
   Future<Uint8List> getBinUri(
     Uri url, {
@@ -135,17 +131,7 @@ class ScHttpClient {
     bool writeCache = true,
     Duration? ttl,
     Map<String, String> headers = const {},
-  }) async =>
-      // TODO: merge _getBin in here
-      _getBin(url, readCache, writeCache, ttl, headers);
-
-  Future<Uint8List> _getBin(
-    Uri url,
-    bool readCache,
-    bool writeCache,
-    Duration? ttl,
-    Map<String, String> headers,
-  ) async {
+  }) async {
     final cachedResp = (readCache || forceBinCache) ? getBinCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
@@ -183,19 +169,19 @@ class ScHttpClient {
       r = forcedCharset(bytes);
     else {
       String Function(List<int>) charset = defaultCharset ?? utf8.decode;
-      // TODO: try getting rid of the try
-      try {
-        charset = {
-          // TODO: read the spec to support more charsets
-          'utf8': utf8,
-          'us': ascii,
-          'usascii': ascii,
-          'ascii': ascii,
-          'latin1': latin1,
-          'l1': latin1,
-        }[res.headers.contentType!.charset!.toLowerCase().replaceAll('-', '')]!
-            .decode;
-      } on Object {}
+      charset = {
+            // TODO: support more of these:
+            // https://www.iana.org/assignments/character-sets/character-sets.xhtml
+            // (or just look at what package:http is doing)
+            'utf8': utf8,
+            'us': ascii,
+            'usascii': ascii,
+            'ascii': ascii,
+            'latin1': latin1,
+            'l1': latin1,
+          }[res.headers.contentType?.charset?.toLowerCase().replaceAll('-', '')]
+              ?.decode ??
+          charset;
       r = charset(bytes);
     }
 
