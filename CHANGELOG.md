@@ -1,3 +1,7 @@
+## 5.0.0-alpha.0
+
+* Removed `forceCache` and `forceBinCache`; use super-classes instead
+
 ## 4.1.0
 
 * Added support for custom `headers` to `getBin` and `getBinUri`

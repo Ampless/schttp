@@ -3,7 +3,8 @@ import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
 
-// TODO: can we just extend HttpClient?
+// TODO: ship something like a mock client
+// TODO: can we just extend HttpClient? (we probably cant)
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(Uri) getCache;
@@ -12,10 +13,6 @@ class ScHttpClient {
   void Function(Uri, Object, String, Duration?) setPostCache;
   Uint8List? Function(Uri) getBinCache;
   void Function(Uri, Uint8List, Duration?) setBinCache;
-  // TODO: why tf is there no forcePostCache?? (also cant we just remove them,
-  // because you can extend anyways; we could then also ship a MockClient like
-  // package:http does)
-  bool forceCache, forceBinCache;
 
   ScHttpClient({
     this.getCache = _getCacheDmy,
@@ -24,8 +21,6 @@ class ScHttpClient {
     this.setPostCache = _setPostCacheDmy,
     this.getBinCache = _getBinCacheDmy,
     this.setBinCache = _setCacheDmy,
-    this.forceCache = false,
-    this.forceBinCache = false,
     String? userAgent,
     String Function(Uri)? findProxy,
   }) {
@@ -67,8 +62,7 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) async {
-    final cachedResp =
-        (readCache || forceCache) ? getPostCache(url, body) : null;
+    final cachedResp = readCache ? getPostCache(url, body) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.postUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
@@ -103,11 +97,10 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) async {
-    final cachedResp = (readCache || forceCache) ? getCache(url) : null;
+    final cachedResp = readCache ? getCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    headers.forEach(
-        (k, v) => req.headers.add(k, v)); // ← TODO: this code is horrible
+    headers.forEach((k, v) => req.headers.add(k, v));
     return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
         (r) => setCache(url, r, ttl));
   }
@@ -132,7 +125,7 @@ class ScHttpClient {
     Duration? ttl,
     Map<String, String> headers = const {},
   }) async {
-    final cachedResp = (readCache || forceBinCache) ? getBinCache(url) : null;
+    final cachedResp = readCache ? getBinCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach((k, v) => req.headers.add(k, v));
@@ -148,8 +141,7 @@ class ScHttpClient {
     final res = await req.close();
     final b = await res.toList();
     final bin = Uint8List.fromList(b.reduce((v, e) => [...v, ...e]));
-    if (res.statusCode == 200 && (writeCache || forceBinCache))
-      setBinCache(url, bin, ttl);
+    if (res.statusCode == 200 && writeCache) setBinCache(url, bin, ttl);
     return bin;
   }
 
@@ -185,7 +177,7 @@ class ScHttpClient {
       r = charset(bytes);
     }
 
-    if (res.statusCode == 200 && (writeCache || forceCache)) setc(r);
+    if (res.statusCode == 200 && writeCache) setc(r);
     return r;
   }
 }
