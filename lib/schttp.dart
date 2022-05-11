@@ -3,6 +3,7 @@ import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
 
+// TODO: can we just extend HttpClient?
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(Uri) getCache;
@@ -11,6 +12,8 @@ class ScHttpClient {
   void Function(Uri, Object, String, Duration?) setPostCache;
   Uint8List? Function(Uri) getBinCache;
   void Function(Uri, Uint8List, Duration?) setBinCache;
+  // TODO: why tf is there no forcePostCache?? (also cant we just remove them,
+  // because you can extend anyways)
   bool forceCache, forceBinCache;
 
   ScHttpClient({
@@ -58,6 +61,7 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) =>
+      // TODO: merge _post in here
       _post(url, body, headers, readCache, writeCache, ttl, defaultCharset,
           forcedCharset);
 
@@ -90,7 +94,8 @@ class ScHttpClient {
     final cachedResp = (readCache || forceCache) ? getCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
+    headers.forEach(
+        (k, v) => req.headers.add(k, v)); // ← TODO: this code is horrible
     return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
         (r) => setCache(url, r, ttl));
   }
@@ -131,6 +136,7 @@ class ScHttpClient {
     Duration? ttl,
     Map<String, String> headers = const {},
   }) async =>
+      // TODO: merge _getBin in here
       _getBin(url, readCache, writeCache, ttl, headers);
 
   Future<Uint8List> _getBin(
@@ -177,8 +183,10 @@ class ScHttpClient {
       r = forcedCharset(bytes);
     else {
       String Function(List<int>) charset = defaultCharset ?? utf8.decode;
+      // TODO: try getting rid of the try
       try {
         charset = {
+          // TODO: read the spec to support more charsets
           'utf8': utf8,
           'us': ascii,
           'usascii': ascii,
