@@ -1,4 +1,4 @@
-## 5.0.0-alpha.1
+## 5.0.0-alpha.2
 
 * Added `SCacheClient`
 * Removed `forceCache` and `forceBinCache`; use `SCacheClient` instead

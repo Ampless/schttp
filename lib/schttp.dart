@@ -191,9 +191,9 @@ class SCacheClient implements ScHttpClient {
       setBinCache = _setCacheDmy;
 
   SCacheClient({
-    required this.getCache,
-    required this.getPostCache,
-    required this.getBinCache,
+    this.getCache = _getCacheDmy,
+    this.getPostCache = _getPostCacheDmy,
+    this.getBinCache = _getBinCacheDmy,
   });
 
   HttpClient get _client => throw UnimplementedError();
