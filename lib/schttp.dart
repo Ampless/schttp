@@ -3,7 +3,12 @@ import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
 
-// TODO: ship something like a mock client
+String? _getCacheDmy(_) => null;
+String? _getPostCacheDmy(_, __) => null;
+Uint8List? _getBinCacheDmy(_) => null;
+void _setCacheDmy(_, __, ___) {}
+void _setPostCacheDmy(_, __, ___, ____) {}
+
 // TODO: can we just extend HttpClient? (we probably cant)
 class ScHttpClient {
   final _client = HttpClient();
@@ -27,12 +32,6 @@ class ScHttpClient {
     if (userAgent != null) _client.userAgent = userAgent;
     if (findProxy != null) _client.findProxy = findProxy;
   }
-
-  static String? _getCacheDmy(_) => null;
-  static String? _getPostCacheDmy(_, __) => null;
-  static Uint8List? _getBinCacheDmy(_) => null;
-  static void _setCacheDmy(_, __, ___) {}
-  static void _setPostCacheDmy(_, __, ___, ____) {}
 
   Future<String> post(
     String url,
@@ -180,4 +179,77 @@ class ScHttpClient {
     if (res.statusCode == 200 && writeCache) setc(r);
     return r;
   }
+}
+
+class SCacheClient implements ScHttpClient {
+  String? Function(Uri) getCache;
+  String? Function(Uri, Object) getPostCache;
+  Uint8List? Function(Uri) getBinCache;
+
+  var setCache = _setCacheDmy,
+      setPostCache = _setPostCacheDmy,
+      setBinCache = _setCacheDmy;
+
+  SCacheClient({
+    required this.getCache,
+    required this.getPostCache,
+    required this.getBinCache,
+  });
+
+  HttpClient get _client => throw UnimplementedError();
+  _finishBin(_, __, ___, ____) => throw UnimplementedError();
+  _finishRequest(_, __, ___, ____, _____) => throw UnimplementedError();
+
+  @override
+  Future<String> get(String url,
+          {readCache = true,
+          writeCache = true,
+          ttl,
+          headers = const {},
+          defaultCharset,
+          forcedCharset}) async =>
+      getUri(Uri.parse(url));
+
+  @override
+  Future<String> getUri(Uri url,
+          {readCache = true,
+          writeCache = true,
+          ttl,
+          headers = const {},
+          defaultCharset,
+          forcedCharset}) async =>
+      getCache(url)!;
+
+  @override
+  Future<Uint8List> getBin(String url,
+          {readCache = true, writeCache = true, ttl, headers = const {}}) =>
+      getBinUri(Uri.parse(url));
+
+  @override
+  Future<Uint8List> getBinUri(Uri url,
+          {readCache = true,
+          writeCache = true,
+          ttl,
+          headers = const {}}) async =>
+      getBinCache(url)!;
+
+  @override
+  Future<String> post(String url, Object body,
+          {headers = const {},
+          readCache = true,
+          writeCache = true,
+          ttl,
+          defaultCharset,
+          forcedCharset}) =>
+      postUri(Uri.parse(url), body);
+
+  @override
+  Future<String> postUri(Uri url, Object body,
+          {headers = const {},
+          readCache = true,
+          writeCache = true,
+          ttl,
+          defaultCharset,
+          forcedCharset}) async =>
+      getPostCache(url, body)!;
 }

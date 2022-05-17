@@ -1,6 +1,7 @@
-## 5.0.0-alpha.0
+## 5.0.0-alpha.1
 
-* Removed `forceCache` and `forceBinCache`; use super-classes instead
+* Added `SCacheClient`
+* Removed `forceCache` and `forceBinCache`; use `SCacheClient` instead
 
 ## 4.1.0
 
