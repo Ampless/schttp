@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:bom/bom.dart';
 import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
@@ -159,8 +160,7 @@ class ScHttpClient {
     if (forcedCharset != null)
       r = forcedCharset(bytes);
     else {
-      String Function(List<int>) charset = defaultCharset ?? utf8.decode;
-      charset = {
+      final charset = {
             // TODO: support more of these:
             // https://www.iana.org/assignments/character-sets/character-sets.xhtml
             // (or just look at what package:http is doing)
@@ -172,7 +172,11 @@ class ScHttpClient {
             'l1': latin1,
           }[res.headers.contentType?.charset?.toLowerCase().replaceAll('-', '')]
               ?.decode ??
-          charset;
+          (UnicodeEncoding.fromBom(bytes) == UnicodeEncoding.utf8
+              ? utf8.decode
+              : null) ??
+          defaultCharset ??
+          utf8.decode;
       r = charset(bytes);
     }
 
