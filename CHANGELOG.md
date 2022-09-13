@@ -1,8 +1,8 @@
-## 5.0.0-alpha.3
+## 5.0.0-alpha.4
 
 * Added `SCacheClient`
 * Removed `forceCache` and `forceBinCache`; use `SCacheClient` instead
-* Everything now uses `bom` to figure out the charset if isn't provided directly
+* Everything now uses `bom` to figure out the charset if it isn't provided directly
 
 ## 4.1.0
 

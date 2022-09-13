@@ -156,29 +156,26 @@ class ScHttpClient {
     final b = await res.toList();
     final bytes = b.reduce((v, e) => [...v, ...e]);
 
-    String r;
-    if (forcedCharset != null)
-      r = forcedCharset(bytes);
-    else {
-      final charset = {
-            // TODO: support more of these:
-            // https://www.iana.org/assignments/character-sets/character-sets.xhtml
-            // (or just look at what package:http is doing)
-            'utf8': utf8,
-            'us': ascii,
-            'usascii': ascii,
-            'ascii': ascii,
-            'latin1': latin1,
-            'l1': latin1,
-          }[res.headers.contentType?.charset?.toLowerCase().replaceAll('-', '')]
-              ?.decode ??
-          (UnicodeEncoding.fromBom(bytes) == UnicodeEncoding.utf8
-              ? utf8.decode
-              : null) ??
-          defaultCharset ??
-          utf8.decode;
-      r = charset(bytes);
-    }
+    String r = (forcedCharset ??
+        {
+          // TODO: support more of these:
+          // https://www.iana.org/assignments/character-sets/character-sets.xhtml
+          // (or just look at what package:http is doing)
+          'utf8': utf8,
+          'us': ascii,
+          'usascii': ascii,
+          'ascii': ascii,
+          'latin1': latin1,
+          'l1': latin1,
+        }[res.headers.contentType?.charset?.toLowerCase().replaceAll('-', '')]
+            ?.decode ??
+        {
+          // TODO: also support utf16/32/... here
+          UnicodeEncoding.utf8: utf8,
+        }[UnicodeEncoding.fromBom(bytes)]
+            ?.decode ??
+        defaultCharset ??
+        utf8.decode)(bytes);
 
     if (res.statusCode == 200 && writeCache) setc(r);
     return r;
