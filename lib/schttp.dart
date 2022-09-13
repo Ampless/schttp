@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:bom/bom.dart';
+import 'package:meta/meta.dart';
 import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
@@ -10,7 +11,9 @@ Uint8List? _getBinCacheDmy(_) => null;
 void _setCacheDmy(_, __, ___) {}
 void _setPostCacheDmy(_, __, ___, ____) {}
 
-// TODO: can we just extend HttpClient? (we probably cant)
+// TODO: respect headers or so in caching
+
+@sealed
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(Uri) getCache;
@@ -65,10 +68,9 @@ class ScHttpClient {
     final cachedResp = readCache ? getPostCache(url, body) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.postUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
-    req.writeln(body);
-    return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
-        (r) => setPostCache(url, body, r, ttl));
+    headers.forEach(req.headers.set);
+    return _finishRequest(req..writeln(body), writeCache, defaultCharset,
+        forcedCharset, (r) => setPostCache(url, body, r, ttl));
   }
 
   Future<String> get(
@@ -100,7 +102,7 @@ class ScHttpClient {
     final cachedResp = readCache ? getCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
+    headers.forEach(req.headers.set);
     return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
         (r) => setCache(url, r, ttl));
   }
@@ -128,20 +130,19 @@ class ScHttpClient {
     final cachedResp = readCache ? getBinCache(url) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
-    headers.forEach((k, v) => req.headers.add(k, v));
-    return _finishBin(req, url, writeCache, ttl);
+    headers.forEach(req.headers.set);
+    return _finishBin(req, writeCache, (r) => setBinCache(url, r, ttl));
   }
 
   Future<Uint8List> _finishBin(
     HttpClientRequest req,
-    Uri url,
     bool writeCache,
-    Duration? ttl,
+    void Function(Uint8List) setCache,
   ) async {
     final res = await req.close();
     final b = await res.toList();
-    final bin = Uint8List.fromList(b.reduce((v, e) => [...v, ...e]));
-    if (res.statusCode == 200 && writeCache) setBinCache(url, bin, ttl);
+    final bin = Uint8List.fromList(b.reduce((v, e) => v + e));
+    if (res.statusCode == 200 && writeCache) setCache(bin);
     return bin;
   }
 
@@ -150,11 +151,10 @@ class ScHttpClient {
     bool writeCache,
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
-    void Function(String) setc,
+    void Function(String) setCache,
   ) async {
     final res = await req.close();
-    final b = await res.toList();
-    final bytes = b.reduce((v, e) => [...v, ...e]);
+    final bytes = await res.toList().then((b) => b.reduce((v, e) => v + e));
 
     String r = (forcedCharset ??
         {
@@ -170,23 +170,28 @@ class ScHttpClient {
         }[res.headers.contentType?.charset?.toLowerCase().replaceAll('-', '')]
             ?.decode ??
         {
-          // TODO: also support utf16/32/... here
+          // TODO: also support utf16/32/… here
           UnicodeEncoding.utf8: utf8,
         }[UnicodeEncoding.fromBom(bytes)]
             ?.decode ??
         defaultCharset ??
         utf8.decode)(bytes);
 
-    if (res.statusCode == 200 && writeCache) setc(r);
+    if (res.statusCode == 200 && writeCache) setCache(r);
     return r;
   }
 }
 
+@sealed
 class SCacheClient implements ScHttpClient {
+  @override
   String? Function(Uri) getCache;
+  @override
   String? Function(Uri, Object) getPostCache;
+  @override
   Uint8List? Function(Uri) getBinCache;
 
+  @override
   var setCache = _setCacheDmy,
       setPostCache = _setPostCacheDmy,
       setBinCache = _setCacheDmy;
@@ -197,8 +202,11 @@ class SCacheClient implements ScHttpClient {
     this.getBinCache = _getBinCacheDmy,
   });
 
-  HttpClient get _client => throw UnimplementedError();
-  _finishBin(_, __, ___, ____) => throw UnimplementedError();
+  @override
+  get _client => throw UnimplementedError();
+  @override
+  _finishBin(_, __, ___) => throw UnimplementedError();
+  @override
   _finishRequest(_, __, ___, ____, _____) => throw UnimplementedError();
 
   @override

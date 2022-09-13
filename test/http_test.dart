@@ -1,9 +1,9 @@
 import 'package:schttp/schttp.dart';
 import 'package:test/test.dart';
 
-typedef Future<Null> testCase();
+typedef TestCase = Future<void> Function();
 
-testCase getCase(String url) => () async {
+TestCase getCase(String url) => () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
         getCache: (_) {
@@ -17,7 +17,7 @@ testCase getCase(String url) => () async {
       assert(setCacheCalled);
     };
 
-testCase postCase(String url, String body) => () async {
+TestCase postCase(String url, String body) => () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
         getPostCache: (_, __) {
@@ -31,12 +31,14 @@ testCase postCase(String url, String body) => () async {
       assert(setCacheCalled);
     };
 
-List<testCase> testCases = [
+List<TestCase> testCases = [
   getCase('https://example.com/'),
   postCase('https://example.com/', 'this is a test'),
 ];
 
 void main() {
   var i = 1;
-  for (final testCase in testCases) test('case ${i++}', testCase);
+  for (final testCase in testCases) {
+    test('case ${i++}', testCase);
+  }
 }

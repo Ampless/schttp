@@ -1,8 +1,11 @@
-## 5.0.0-alpha.4
+## 5.0.0-alpha.5
 
 * Added `SCacheClient`
 * Removed `forceCache` and `forceBinCache`; use `SCacheClient` instead
-* Everything now uses `bom` to figure out the charset if it isn't provided directly
+* Everything now uses `bom` to figure out the charset if it isn't provided
+directly
+* All `headers` given are now respected (`HttpHeaders.set` instead of
+`HttpHeaders.add`)
 
 ## 4.1.0
 
