@@ -5,23 +5,22 @@ import 'package:universal_io/io.dart';
 
 import 'dart:typed_data';
 
-String? _getCacheDmy(_) => null;
-String? _getPostCacheDmy(_, __) => null;
-Uint8List? _getBinCacheDmy(_) => null;
-void _setCacheDmy(_, __, ___) {}
-void _setPostCacheDmy(_, __, ___, ____) {}
-
-// TODO: respect headers or so in caching
+String? _getCacheDmy(_, __) => null;
+String? _getPostCacheDmy(_, __, ___) => null;
+Uint8List? _getBinCacheDmy(_, __) => null;
+void _setCacheDmy(_, __, ___, ____) {}
+void _setPostCacheDmy(_, __, ___, ____, _____) {}
 
 @sealed
 class ScHttpClient {
   final _client = HttpClient();
-  String? Function(Uri) getCache;
-  void Function(Uri, String, Duration?) setCache;
-  String? Function(Uri, Object) getPostCache;
-  void Function(Uri, Object, String, Duration?) setPostCache;
-  Uint8List? Function(Uri) getBinCache;
-  void Function(Uri, Uint8List, Duration?) setBinCache;
+  String? Function(Uri, Map<String, String>) getCache;
+  void Function(Uri, Map<String, String>, String, Duration?) setCache;
+  String? Function(Uri, Object, Map<String, String>) getPostCache;
+  void Function(Uri, Object, Map<String, String>, String, Duration?)
+      setPostCache;
+  Uint8List? Function(Uri, Map<String, String>) getBinCache;
+  void Function(Uri, Map<String, String>, Uint8List, Duration?) setBinCache;
 
   ScHttpClient({
     this.getCache = _getCacheDmy,
@@ -65,12 +64,12 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) async {
-    final cachedResp = readCache ? getPostCache(url, body) : null;
+    final cachedResp = readCache ? getPostCache(url, body, headers) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.postUrl(url);
     headers.forEach(req.headers.set);
     return _finishRequest(req..writeln(body), writeCache, defaultCharset,
-        forcedCharset, (r) => setPostCache(url, body, r, ttl));
+        forcedCharset, (r) => setPostCache(url, body, headers, r, ttl));
   }
 
   Future<String> get(
@@ -99,12 +98,12 @@ class ScHttpClient {
     String Function(List<int>)? defaultCharset,
     String Function(List<int>)? forcedCharset,
   }) async {
-    final cachedResp = readCache ? getCache(url) : null;
+    final cachedResp = readCache ? getCache(url, headers) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach(req.headers.set);
     return _finishRequest(req, writeCache, defaultCharset, forcedCharset,
-        (r) => setCache(url, r, ttl));
+        (r) => setCache(url, headers, r, ttl));
   }
 
   Future<Uint8List> getBin(
@@ -127,11 +126,12 @@ class ScHttpClient {
     Duration? ttl,
     Map<String, String> headers = const {},
   }) async {
-    final cachedResp = readCache ? getBinCache(url) : null;
+    final cachedResp = readCache ? getBinCache(url, headers) : null;
     if (cachedResp != null) return cachedResp;
     final req = await _client.getUrl(url);
     headers.forEach(req.headers.set);
-    return _finishBin(req, writeCache, (r) => setBinCache(url, r, ttl));
+    return _finishBin(
+        req, writeCache, (r) => setBinCache(url, headers, r, ttl));
   }
 
   Future<Uint8List> _finishBin(
@@ -185,14 +185,10 @@ class ScHttpClient {
 @sealed
 class SCacheClient implements ScHttpClient {
   @override
-  String? Function(Uri) getCache;
-  @override
-  String? Function(Uri, Object) getPostCache;
-  @override
-  Uint8List? Function(Uri) getBinCache;
-
-  @override
-  var setCache = _setCacheDmy,
+  var getCache = _getCacheDmy,
+      getPostCache = _getPostCacheDmy,
+      getBinCache = _getBinCacheDmy,
+      setCache = _setCacheDmy,
       setPostCache = _setPostCacheDmy,
       setBinCache = _setCacheDmy;
 
@@ -227,7 +223,7 @@ class SCacheClient implements ScHttpClient {
           headers = const {},
           defaultCharset,
           forcedCharset}) async =>
-      getCache(url)!;
+      getCache(url, headers)!;
 
   @override
   Future<Uint8List> getBin(String url,
@@ -240,7 +236,7 @@ class SCacheClient implements ScHttpClient {
           writeCache = true,
           ttl,
           headers = const {}}) async =>
-      getBinCache(url)!;
+      getBinCache(url, headers)!;
 
   @override
   Future<String> post(String url, Object body,
@@ -260,5 +256,5 @@ class SCacheClient implements ScHttpClient {
           ttl,
           defaultCharset,
           forcedCharset}) async =>
-      getPostCache(url, body)!;
+      getPostCache(url, body, headers)!;
 }

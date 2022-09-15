@@ -6,11 +6,11 @@ typedef TestCase = Future<void> Function();
 TestCase getCase(String url) => () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
-        getCache: (_) {
+        getCache: (_, __) {
           getCacheCalled = true;
           return null;
         },
-        setCache: (_, __, ___) => setCacheCalled = true,
+        setCache: (_, __, ___, ____) => setCacheCalled = true,
       );
       await http.get(url);
       assert(getCacheCalled);
@@ -20,11 +20,11 @@ TestCase getCase(String url) => () async {
 TestCase postCase(String url, String body) => () async {
       var setCacheCalled = false, getCacheCalled = false;
       final http = ScHttpClient(
-        getPostCache: (_, __) {
+        getPostCache: (_, __, ___) {
           getCacheCalled = true;
           return null;
         },
-        setPostCache: (_, __, ___, ____) => setCacheCalled = true,
+        setPostCache: (_, __, ___, ____, _____) => setCacheCalled = true,
       );
       await http.post(url, body);
       assert(getCacheCalled);
