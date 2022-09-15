@@ -11,7 +11,6 @@ Uint8List? _getBinCacheDmy(_, __) => null;
 void _setCacheDmy(_, __, ___, ____) {}
 void _setPostCacheDmy(_, __, ___, ____, _____) {}
 
-@sealed
 class ScHttpClient {
   final _client = HttpClient();
   String? Function(Uri, Map<String, String>) getCache;

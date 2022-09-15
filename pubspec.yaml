@@ -1,6 +1,6 @@
 name: schttp
 description: A simple HTTP client supporting a cache.
-version: 5.0.0-alpha.6
+version: 5.0.0-alpha.7
 homepage: https://github.com/Ampless/schttp
 
 environment:
