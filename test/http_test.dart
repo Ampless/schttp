@@ -29,7 +29,7 @@ TestCase postCase(String url, String body) => () async {
       assert(setCacheCalled);
     };
 
-void main() => tests('http', [
+void main() => tests([
       getCase('https://example.com/'),
       postCase('https://example.com/', 'this is a test'),
     ]);
