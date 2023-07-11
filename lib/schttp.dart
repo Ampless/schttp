@@ -205,7 +205,7 @@ class SCacheClient implements ScHttpClient {
   _finishRequest(_, __, ___, ____, _____) => throw UnimplementedError();
 
   @override
-  Future<String> get(String url,
+  Future<String> get(url,
           {readCache = true,
           writeCache = true,
           ttl,
@@ -215,7 +215,7 @@ class SCacheClient implements ScHttpClient {
       getUri(Uri.parse(url));
 
   @override
-  Future<String> getUri(Uri url,
+  Future<String> getUri(url,
           {readCache = true,
           writeCache = true,
           ttl,
@@ -225,12 +225,12 @@ class SCacheClient implements ScHttpClient {
       getCache(url, headers)!;
 
   @override
-  Future<Uint8List> getBin(String url,
+  Future<Uint8List> getBin(url,
           {readCache = true, writeCache = true, ttl, headers = const {}}) =>
       getBinUri(Uri.parse(url));
 
   @override
-  Future<Uint8List> getBinUri(Uri url,
+  Future<Uint8List> getBinUri(url,
           {readCache = true,
           writeCache = true,
           ttl,
@@ -238,7 +238,7 @@ class SCacheClient implements ScHttpClient {
       getBinCache(url, headers)!;
 
   @override
-  Future<String> post(String url, Object body,
+  Future<String> post(url, body,
           {headers = const {},
           readCache = true,
           writeCache = true,
@@ -248,7 +248,7 @@ class SCacheClient implements ScHttpClient {
       postUri(Uri.parse(url), body);
 
   @override
-  Future<String> postUri(Uri url, Object body,
+  Future<String> postUri(url, body,
           {headers = const {},
           readCache = true,
           writeCache = true,
