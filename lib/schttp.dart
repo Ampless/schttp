@@ -181,6 +181,7 @@ class ScHttpClient {
   }
 }
 
+/// An [ScHttpClient] that never uses the network and only reads from the cache.
 @sealed
 class SCacheClient implements ScHttpClient {
   @override

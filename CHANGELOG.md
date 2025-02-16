@@ -1,4 +1,9 @@
-## 5.0.0-alpha.7
+## 5.0.1
+
+* A doc comment for `SCacheClient`.
+* `lints 5`.
+
+## 5.0.0
 
 * Added `SCacheClient`
 * Removed `forceCache` and `forceBinCache`; use `SCacheClient` instead
@@ -7,6 +12,7 @@ directly
 * All `headers` given are now respected (`HttpHeaders.set` instead of
 `HttpHeaders.add`)
 * The caching helpers now also get the `headers`
+* Use `tested` for testing
 
 ## 4.1.0
 
